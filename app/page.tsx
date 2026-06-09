@@ -13,7 +13,7 @@ interface GitHubProfile {
 let globalUesrnames = ['R0216', 'torvalds'];
 
 export default async function Home() {
-  const GITHUB_TOKEN = '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';
+  const GITHUB_TOKEN = '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';
   async function addUser(formData: FormData) {
     'use server';
     const newUSerName = formData.get('username') as string;

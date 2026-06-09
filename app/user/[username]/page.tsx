@@ -17,13 +17,17 @@ interface GitHubRepo {
   html_url: string;
 }
 
-// 💡 新しく行動履歴（イベント）を受け取るための型定義を追加
 interface GitHubEvent {
   id: string;
   type: string;
   created_at: string;
   payload: {
-    size?: number; // 1回のプッシュに含まれるコミット数
+    size?: number;
+    distinct_size?: number;
+    commits?: Array<{
+      sha: string;
+      message: string;
+    }>;
   };
 }
 
@@ -34,13 +38,12 @@ interface PageProps {
 export default async function UserDetailPage({ params }: PageProps) {
   const { username } = await params;
   
-  const GITHUB_TOKEN = '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';
+  const GITHUB_TOKEN = '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';
 
-  // 💡 3つ目のAPI「/events」を同時に取得するように拡張
   const [profileRes, reposRes, eventsRes] = await Promise.all([
     fetch(`https://api.github.com/users/${username}`, { cache: 'no-store', headers: GITHUB_TOKEN ? { 'Authorization': `token ${GITHUB_TOKEN}` } : {} }),
     fetch(`https://api.github.com/users/${username}/repos?sort=updated&per_page=10`, { cache: 'no-store', headers: GITHUB_TOKEN ? { 'Authorization': `token ${GITHUB_TOKEN}` } : {} }),
-    fetch(`https://api.github.com/users/${username}/events?per_page=100`, { cache: 'no-store', headers: GITHUB_TOKEN ? { 'Authorization': `token ${GITHUB_TOKEN}` } : {} }) // 👈 新設
+    fetch(`https://api.github.com/users/${username}/events?per_page=100`, { cache: 'no-store', headers: GITHUB_TOKEN ? { 'Authorization': `token ${GITHUB_TOKEN}` } : {} })
   ]);
 
   if (!profileRes.ok || !reposRes.ok) {
@@ -54,12 +57,10 @@ export default async function UserDetailPage({ params }: PageProps) {
 
   const profileData: GitHubProfile = await profileRes.json();
   const reposData: GitHubRepo[] = await reposRes.json();
-  
-  // イベントデータを取得（失敗した場合は空配列にする安全対策）
   const eventsData: GitHubEvent[] = eventsRes.ok ? await eventsRes.json() : [];
 
   // ==========================================
-  // 📊 ⚡️ 使用言語の分析・スター数集計ロジック ⚡️
+  // 📊 使用言語の分析・スター数集計ロジック
   // ==========================================
   const languageCounts: { [key: string]: number } = {};
   let totalLanguages = 0;
@@ -82,49 +83,51 @@ export default async function UserDetailPage({ params }: PageProps) {
     })
     .sort((a, b) => b.percentage - a.percentage);
 
-const langColors: { [key: string]: string } = {
-        TypeScript: "bg-blue-600",
-        JavaScript: "bg-yellow-400",
-        Python: "bg-sky-600",
-        Java: "bg-amber-700",
-        C: "bg-gray-500",
-        "C++": "bg-pink-500",
-        CSharp: "bg-green-600",
-        Go: "bg-cyan-500",
-        Rust: "bg-orange-400",
-        PHP: "bg-indigo-600",
-        Ruby: "bg-red-700",
-        Kotlin: "bg-purple-500",
-        Swift: "bg-orange-500",
-        HTML: "bg-orange-500",
-        CSS: "bg-purple-500",
-    };
+  const langColors: { [key: string]: string } = {
+    TypeScript: "bg-blue-600",
+    JavaScript: "bg-yellow-400",
+    Python: "bg-sky-600",
+    Java: "bg-amber-700",
+    C: "bg-gray-500",
+    "C++": "bg-pink-500",
+    CSharp: "bg-green-600",
+    Go: "bg-cyan-500",
+    Rust: "bg-orange-400",
+    PHP: "bg-indigo-600",
+    Ruby: "bg-red-700",
+    Kotlin: "bg-purple-500",
+    Swift: "bg-orange-500",
+    HTML: "bg-orange-500",
+    CSS: "bg-purple-500",
+  };
 
   // ==========================================
-  // 📈 ⚡️ 🆕 コミット数の集計ロジック ⚡️
+  // 📈 コミット数の集計ロジック（最終判定版）
   // ==========================================
   let weeklyCommits = 0;
   let monthlyCommits = 0;
   let totalTrackedCommits = 0;
 
   const now = new Date();
-  const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); // 7日前
+  const oneWeekAgo = new Date(now.getTime() - 8 * 24 * 60 * 60 * 1000); 
 
   eventsData.forEach((event) => {
-    // PushEvent（コミットのプッシュ）だけを対象にする
-    if (event.type === "PushEvent") {
-      const commitCount = event.payload.size || 0;
+    if (event.type === "PushEvent" && event.payload) {
+      // 💡 commits配列の長さ、またはsize、distinct_sizeから確実に件数を取る
+      const commitCount = 
+        (event.payload.commits && event.payload.commits.length) || 
+        event.payload.distinct_size || 
+        event.payload.size || 
+        0;
+
       const eventDate = new Date(event.created_at);
 
-      // 1. 総コミット（取得できたデータ内）の合算
       totalTrackedCommits += commitCount;
 
-      // 2. 今週（7日以内）の判定
       if (eventDate >= oneWeekAgo) {
         weeklyCommits += commitCount;
       }
 
-      // 3. 今月（同じ年かつ同じ月）の判定
       if (eventDate.getFullYear() === now.getFullYear() && eventDate.getMonth() === now.getMonth()) {
         monthlyCommits += commitCount;
       }
@@ -155,7 +158,7 @@ const langColors: { [key: string]: string } = {
         </div>
       </div>
 
-      {/* 📈 🆕 新設：コミット数統計ダッシュボード */}
+      {/* 📊 コミット数統計ダッシュボード */}
       <div className="p-6 border rounded-lg bg-white shadow-sm space-y-4">
         <h2 className="text-xl font-bold text-gray-800">📊 アクティビティ統計</h2>
         <p className="text-xs text-gray-400">※直近の活動データからコミット数を集計しています</p>
