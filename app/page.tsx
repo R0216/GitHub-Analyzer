@@ -2,6 +2,7 @@ import React from "react";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import db from "../db"; 
+
 import GuestView from "./_components/GuestView";
 import DashboardView from "./_components/DashboardView";
 
@@ -43,17 +44,17 @@ interface UserDbRow {
   avatar_url: string;
 }
 
-
 interface PageProps {
   searchParams: Promise<{ group?: string; searchUser?: string }>;
 }
 
 export default async function Home({ searchParams }: PageProps) {
-  const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-  const reqHeaders: HeadersInit = GITHUB_TOKEN ? { Authorization: `token ${GITHUB_TOKEN}` } : {};
-
   const cookieStore = await cookies();
   const sessionUser = cookieStore.get("auth_session")?.value || null;
+  const sessionToken = cookieStore.get("auth_github_token")?.value || null;
+
+  const GITHUB_TOKEN = sessionToken || process.env.GITHUB_TOKEN;
+  const reqHeaders: HeadersInit = GITHUB_TOKEN ? { Authorization: `token ${GITHUB_TOKEN}` } : {};
 
   const resolvedSearchParams = await searchParams;
   const currentGroup = resolvedSearchParams.group || "未分類";
@@ -129,7 +130,7 @@ export default async function Home({ searchParams }: PageProps) {
     }
     revalidatePath("/");
   }
-
+  
   const displayUsernames = searchUser ? [searchUser] : (sessionUser ? (myGroups[currentGroup] || []) : []);
 
   const memberStatsPromises = displayUsernames.map(async (username) => {

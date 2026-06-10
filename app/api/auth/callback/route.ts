@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import db from "../../../../db"; 
 
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
@@ -38,12 +39,16 @@ export async function GET(request: NextRequest) {
     stmt.run(githubUser.login, githubUser.name || githubUser.login, githubUser.avatar_url);
 
     const response = NextResponse.redirect(new URL("/", request.url));
-    response.cookies.set("auth_session", githubUser.login, {
+    
+    const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7,
-    });
+      sameSite: "lax" as const,
+      maxAge: 60 * 60 * 24 * 7, 
+    };
+
+    response.cookies.set("auth_session", githubUser.login, cookieOptions);
+    response.cookies.set("auth_github_token", accessToken, cookieOptions);
 
     return response;
   } catch (error) {
