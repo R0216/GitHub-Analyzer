@@ -1,6 +1,8 @@
 import React from "react";
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
+import fs from "fs";
+import path from "path";
 
 interface GitHubProfile {
   login: string;
@@ -10,34 +12,76 @@ interface GitHubProfile {
   avatar_url: string;
 }
 
-let globalUesrnames = ['R0216', 'torvalds'];
+// 💾 データの保存先（プロジェクトのルート直下に users.json を作成する）
+const filePath = path.join(process.cwd(), "users.json");
+
+// 📁 ファイルからアカウント一覧を読み込む関数
+function loadUsernames(): string[] {
+  try {
+    if (fs.existsSync(filePath)) {
+      const data = fs.readFileSync(filePath, "utf-8");
+      return JSON.parse(data);
+    }
+  } catch (error) {
+    console.error("ファイル読み込みエラー:", error);
+  }
+  // ファイルがない場合の初期値
+  return ["R0216", "torvalds"];
+}
+
+// 📁 ファイルへアカウント一覧を保存する関数
+function saveUsernames(usernames: string[]) {
+  try {
+    fs.writeFileSync(filePath, JSON.stringify(usernames, null, 2), "utf-8");
+  } catch (error) {
+    console.error("ファイル書き込みエラー:", error);
+  }
+}
 
 export default async function Home() {
-  const GITHUB_TOKEN = process.env.GITHUB_TOKEN
+  const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+  
+  // 現在保存されているメンバーを読み出す
+  const currentUsernames = loadUsernames();
+
+  // ➕ メンバー追加アクション
   async function addUser(formData: FormData) {
-    'use server';
-    const newUSerName = formData.get('username') as string;
+    "use server";
+    const newUserName = formData.get("username") as string;
+    if (!newUserName) return;
 
-    if (newUSerName && !globalUesrnames.includes(newUSerName.trim())) {
-      globalUesrnames.push(newUSerName.trim());
+    const trimmedName = newUserName.trim();
+    const usernames = loadUsernames();
+
+    // 重複チェックをして、新しければファイルに保存
+    if (trimmedName && !usernames.includes(trimmedName)) {
+      usernames.push(trimmedName);
+      saveUsernames(usernames);
     }
-    revalidatePath('/');
+    revalidatePath("/");
   }
 
-  async function deleteUser(formData:FormData) {
-    'use server';
-    const usernameToDelete = formData.get('username') as string;
+  // 🗑️ メンバー削除アクション
+  async function deleteUser(formData: FormData) {
+    "use server";
+    const usernameToDelete = formData.get("username") as string;
+    if (!usernameToDelete) return;
 
-    globalUesrnames = globalUesrnames.filter(name => name !== usernameToDelete);
-    revalidatePath('/')
+    const usernames = loadUsernames();
+    const filteredUsernames = usernames.filter((name) => name !== usernameToDelete);
+    
+    // 削除後のリストをファイルに保存
+    saveUsernames(filteredUsernames);
+    revalidatePath("/");
   }
 
-  const profilePromises = globalUesrnames.map(async (username) => {
-    const res = await fetch(`https://api.github.com/users/${username}`,{
-      cache: 'no-store',
-      headers: GITHUB_TOKEN ? { Authorization: `token ${GITHUB_TOKEN}` } : {}
+  // 各プロフィールの非同期フェッチ処理
+  const profilePromises = currentUsernames.map(async (username) => {
+    const res = await fetch(`https://api.github.com/users/${username}`, {
+      cache: "no-store",
+      headers: GITHUB_TOKEN ? { Authorization: `token ${GITHUB_TOKEN}` } : {},
     });
-    if(!res.ok) {
+    if (!res.ok) {
       console.error(`GitHub API Error: ${res.status} ${res.statusText}`);
       return null;
     }
@@ -47,7 +91,7 @@ export default async function Home() {
   const allProfiles = await Promise.all(profilePromises);
   const validProfiles = allProfiles.filter((p): p is GitHubProfile => p !== null);
  
-  return(
+  return (
     <main className="p-8 max-w-2xl mx-auto space-y-8">
       <div className="text-center sm:text-left">
         <h1 className="text-3xl font-bold text-gray-900">GitHub Analyzer</h1>
@@ -80,7 +124,6 @@ export default async function Home() {
                 key={user.login}
                 className="relative flex items-center justify-between p-4 bg-white border rounded-lg shadow-sm hover:border-blue-500 hover:shadow-md transition-all duration-200 group"
               >
-                {/* 1. 左側全体を詳細ページへのリンクにする（ボタンとエリアを分離してバグを回避） */}
                 <Link
                   href={`/user/${user.login}`}
                   className="flex items-center space-x-4 flex-1 min-w-0 no-underline text-current cursor-pointer"
@@ -104,9 +147,7 @@ export default async function Home() {
                   </div>
                 </Link>
 
-                {/* 2. 右側に独立した削除用のフォームとボタンを配置 */}
                 <form action={deleteUser} className="ml-2 flex-shrink-0">
-                  {/* サーバーに誰を消すかを伝えるための隠し入力欄 */}
                   <input type="hidden" name="username" value={user.login} />
                   <button
                     type="submit"
@@ -124,5 +165,3 @@ export default async function Home() {
     </main>
   );
 }
-
-
