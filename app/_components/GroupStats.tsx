@@ -23,7 +23,6 @@ export default function GroupStats({
   groupTotalCommits,
   groupLanguageAnalysis,
 }: GroupStatsProps) {
-  // 未分類グループ、またはメンバーがゼロの時はサマリーを表示しない
   if (currentGroup === "未分類" || validMemberStats.length === 0) return null;
 
   const langColors: { [key: string]: string } = {
@@ -33,7 +32,6 @@ export default function GroupStats({
     HTML: "bg-orange-500", CSS: "bg-purple-500",
   };
 
-  // ランキング順に並び替え
   const rankingList = [...validMemberStats].sort((a, b) => b.monthlyCommits - a.monthlyCommits);
 
   return (
@@ -43,14 +41,12 @@ export default function GroupStats({
       </h3>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* 総コミット数 */}
         <div className="p-4 bg-white border rounded-xl shadow-sm text-center space-y-1">
           <div className="text-xs text-purple-600 font-bold">グループ今月の総コミット</div>
           <div className="text-3xl font-mono font-black text-purple-900">{groupTotalCommits}</div>
           <p className="text-[10px] text-gray-400">所属メンバーの今月の活動総量</p>
         </div>
 
-        {/* 言語割合 */}
         <div className="p-4 bg-white border rounded-xl shadow-sm sm:col-span-2 space-y-2">
           <div className="text-xs text-gray-500 font-bold">グループ内の開発言語割合</div>
           {groupLanguageAnalysis.length === 0 ? (
@@ -84,7 +80,6 @@ export default function GroupStats({
         </div>
       </div>
 
-      {/* ランキング（全員分） */}
       <div className="p-4 bg-white border rounded-xl shadow-sm space-y-3">
         <div className="text-xs text-blue-600 font-bold">🏆 今月のコミット数ランキング（全員分）</div>
         <div className="divide-y border-t border-b overflow-hidden rounded-lg max-h-60 overflow-y-auto">

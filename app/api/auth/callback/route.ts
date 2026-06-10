@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-// 💡 エラーの原因になっていた jose のインポートを削除（不要なため）
 import db from "../../../../db"; 
 
 export async function GET(request: NextRequest) {

@@ -39,8 +39,6 @@ interface PageProps {
 
 export default async function UserDetailPage({ params }: PageProps) {
   const { username } = await params;
-  
-  // 💡 安全対策：生トークンではなく環境変数から読み込む形にして、再ブロックを完全に防ぎます
   const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 
   const [profileRes, reposRes, eventsRes] = await Promise.all([
@@ -62,9 +60,6 @@ export default async function UserDetailPage({ params }: PageProps) {
   const reposData: GitHubRepo[] = await reposRes.json();
   const eventsData: GitHubEvent[] = eventsRes.ok ? await eventsRes.json() : [];
 
-  // ==========================================
-  // 📊 使用言語の分析・スター数集計ロジック
-  // ==========================================
   const languageCounts: { [key: string]: number } = {};
   let totalLanguages = 0;
   let totalStars = 0;
@@ -104,9 +99,6 @@ export default async function UserDetailPage({ params }: PageProps) {
     CSS: "bg-purple-500",
   };
 
-  // ==========================================
-  // 📈 コミット数 ＆ 🕒 活動時間 ＆ 🔥 メインプロジェクトの集計
-  // ==========================================
   let weeklyCommits = 0;
   let monthlyCommits = 0;
   let totalTrackedCommits = 0;
@@ -116,7 +108,6 @@ export default async function UserDetailPage({ params }: PageProps) {
   
   let latestRepoName = "";
   
-  // 💡 解決策：明示的に Date | null 型を指定することで「never型エラー」を完全に消し去ります
   let latestCommitDate: Date | null = null; 
 
   const now = new Date();
@@ -132,23 +123,19 @@ export default async function UserDetailPage({ params }: PageProps) {
 
       const eventDate = new Date(event.created_at);
 
-      // ① 基礎コミット数の集計
       totalTrackedCommits += commitCount;
       if (eventDate >= oneWeekAgo) weeklyCommits += commitCount;
       if (eventDate.getFullYear() === now.getFullYear() && eventDate.getMonth() === now.getMonth()) {
         monthlyCommits += commitCount;
       }
 
-      // ② 開発リズム（時間帯）の集計
       const jstHour = (eventDate.getUTCHours() + 9) % 24;
       const slotIndex = Math.floor(jstHour / 2);
       timeSlots[slotIndex] += commitCount;
 
-      // ③ リポジトリごとのコミット数の集計
       const repoName = event.repo.name.split("/")[1] || event.repo.name;
       repoCommitCounts[repoName] = (repoCommitCounts[repoName] || 0) + commitCount;
 
-      // ④ 一番最新のコミットを特定する
       if (!latestCommitDate || eventDate > latestCommitDate) {
         latestCommitDate = eventDate;
         latestRepoName = repoName;
@@ -156,7 +143,6 @@ export default async function UserDetailPage({ params }: PageProps) {
     }
   });
 
-  // 一番コミット数が多い「メインプロジェクト」を特定する
   let mainProjectName = "";
   let mainProjectCommits = 0;
 
@@ -167,7 +153,6 @@ export default async function UserDetailPage({ params }: PageProps) {
     }
   });
 
-  // 時間帯分析の決定
   let maxCommitsInSlot = 0;
   let peakSlotIndex = 11;
   timeSlots.forEach((count, index) => {
@@ -206,7 +191,6 @@ export default async function UserDetailPage({ params }: PageProps) {
         ← トップページに戻る
       </Link>
 
-      {/* 👤 プロフィール */}
       <div className="flex items-center space-x-6 p-6 bg-gray-50 rounded-lg shadow-sm border">
         <img 
           src={profileData.avatar_url} 
@@ -224,7 +208,6 @@ export default async function UserDetailPage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* 📊 コミット数統計ダッシュボード */}
       <div className="p-6 border rounded-lg bg-white shadow-sm space-y-4">
         <h2 className="text-xl font-bold text-gray-800">📊 アクティビティ統計</h2>
         <p className="text-xs text-gray-400">※直近 of 活動データからコミット数を集計しています</p>
@@ -245,7 +228,6 @@ export default async function UserDetailPage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* 🕒 開発リズム分析（活動時間） */}
       <div className="p-6 border rounded-lg bg-white shadow-sm space-y-4">
         <h2 className="text-xl font-bold text-gray-800">🕒 開発リズム分析</h2>
         
@@ -267,10 +249,8 @@ export default async function UserDetailPage({ params }: PageProps) {
         )}
       </div>
 
-      {/* 🔥 現在のメインプロジェクト ＆ 最新動向 */}
       {totalTrackedCommits > 0 && mainProjectName && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* メインプロジェクト */}
           <div className="p-5 border rounded-lg bg-gradient-to-br from-red-50/40 to-orange-50/20 shadow-sm border-red-100 space-y-3">
             <div className="flex items-center space-x-2">
               <span className="text-lg">🔥</span>
@@ -282,7 +262,6 @@ export default async function UserDetailPage({ params }: PageProps) {
             </div>
           </div>
 
-          {/* 最新のコミット */}
           <div className="p-5 border rounded-lg bg-gradient-to-br from-blue-50/40 to-indigo-50/20 shadow-sm border-blue-100 space-y-3">
             <div className="flex items-center space-x-2">
               <span className="text-lg">✨</span>
@@ -300,7 +279,6 @@ export default async function UserDetailPage({ params }: PageProps) {
         </div>
       )}
 
-      {/* 🏆 使用言語ランキング */}
       <div className="p-6 border rounded-lg bg-white shadow-sm space-y-4">
         <h2 className="text-xl font-bold text-gray-800">🏆 使用言語ランキング</h2>
         
@@ -343,7 +321,6 @@ export default async function UserDetailPage({ params }: PageProps) {
         )}
       </div>
 
-      {/* 📦 リポジトリ一覧 */}
       <div className="space-y-4">
         <h2 className="text-xl font-bold border-b pb-2 text-gray-800">公開リポジトリ (最近更新された10件)</h2>
         

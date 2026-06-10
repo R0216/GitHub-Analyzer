@@ -1,7 +1,6 @@
 import React from "react";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
-// 💡 パスエラーの解決：エイリアスを使わず相対パスでルートのdbにアクセス
 import db from "../db"; 
 import GuestView from "./_components/GuestView";
 import DashboardView from "./_components/DashboardView";

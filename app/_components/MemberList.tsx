@@ -28,7 +28,6 @@ export default function MemberList({
   return (
     <div className="space-y-6">
       <div className="space-y-4">
-        {/* メンバー追加フォーム */}
         <form action={addUserAction} className="flex gap-2 p-4 bg-gray-50 rounded-lg border shadow-sm">
           <input type="hidden" name="targetGroup" value={currentGroup} />
           <input 
@@ -46,8 +45,6 @@ export default function MemberList({
           </button>
         </form>
       </div>
-
-      {/* メンバーカード一覧 */}
       <div className="space-y-3">
         <h3 className="text-sm font-bold text-gray-500 px-1">所属メンバー 一覧</h3>
         
@@ -86,8 +83,7 @@ export default function MemberList({
                       </div>
                     </div>
                   </Link>
-
-                  {/* メンバー削除ボタン */}
+                  
                   <DeleteButton
                     action={deleteUserAction}
                     name="username"

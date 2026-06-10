@@ -4,7 +4,7 @@ import path from "path";
 const dbPath = path.join(process.cwd(), "database.db");
 const db = new Database(dbPath);
 
-// データベースのテーブル初期化（初期化スクリプト）
+
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -21,8 +21,6 @@ export default function GroupSidebar({
         <h2 className="text-xl font-bold text-white">📂 グループ管理</h2>
         <p className="text-xs text-gray-400">チーム開発の枠組みを作成します</p>
       </div>
-
-      {/* グループ作成フォーム */}
       <form action={createGroupAction} className="flex flex-col gap-2 p-4 bg-gray-50 rounded-lg border shadow-sm">
         <input 
           type="text"
@@ -38,8 +36,6 @@ export default function GroupSidebar({
           ＋ グループを作成
         </button>
       </form>
-
-      {/* 作成されたグループ一覧 */}
       <div className="space-y-2">
         <h3 className="text-sm font-bold text-gray-500 px-1">作成グループ一覧</h3>
         <div className="space-y-1">
@@ -67,8 +63,6 @@ export default function GroupSidebar({
                       {groups[name].length}人
                     </span>
                   </Link>
-
-                  {/* グループ削除ボタン */}
                   <DeleteButton
                     action={deleteGroupAction}
                     name="groupName"
