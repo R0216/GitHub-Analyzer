@@ -1,13 +1,10 @@
 import React from "react";
-import Link from "next/link";
+import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
-import fs from "fs";
-import path from "path";
-
-// 作成したコンポーネント群をインポート
-import GroupSidebar from "./_components/GroupSidebar";
-import GroupStats from "./_components/GroupStats";
-import MemberList from "./_components/MemberList";
+// 💡 パスエラーの解決：エイリアスを使わず相対パスでルートのdbにアクセス
+import db from "../db"; 
+import GuestView from "./_components/GuestView";
+import DashboardView from "./_components/DashboardView";
 
 interface GitHubProfile {
   login: string;
@@ -32,93 +29,109 @@ interface MemberStats {
   languages: string[];
 }
 
-const filePath = path.join(process.cwd(), "groups.json");
-interface GroupData { [groupName: string]: string[]; }
-
-function loadGroups(): GroupData {
-  try {
-    if (fs.existsSync(filePath)) {
-      return JSON.parse(fs.readFileSync(filePath, "utf-8"));
-    }
-  } catch (e) { console.error(e); }
-  return { "未分類": ["R0216", "torvalds"] };
+interface GroupDbRow {
+  id: number;
+  name: string;
+  owner_id: number;
+}
+interface MemberDbRow {
+  username: string;
+}
+interface UserDbRow {
+  id: number;
+  github_id: string;
+  name: string;
+  avatar_url: string;
 }
 
-function saveGroups(data: GroupData) {
-  try { fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf-8"); } catch (e) { console.error(e); }
-}
 
 interface PageProps {
-  searchParams: Promise<{ group?: string }>;
+  searchParams: Promise<{ group?: string; searchUser?: string }>;
 }
 
 export default async function Home({ searchParams }: PageProps) {
   const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+  const reqHeaders: HeadersInit = GITHUB_TOKEN ? { Authorization: `token ${GITHUB_TOKEN}` } : {};
+
+  const cookieStore = await cookies();
+  const sessionUser = cookieStore.get("auth_session")?.value || null;
+
   const resolvedSearchParams = await searchParams;
   const currentGroup = resolvedSearchParams.group || "未分類";
-  
-  const groups = loadGroups();
-  const displayUsernames = groups[currentGroup] || [];
+  const searchUser = resolvedSearchParams.searchUser || "";
 
-  // ==========================================
-  // Server Actions (サーバー側の処理ロジック)
-  // ==========================================
+  let userInDb: UserDbRow | null = null;
+  let myGroups: { [key: string]: string[] } = { "未分類": [] };
+
+  if (sessionUser) {
+    userInDb = db.prepare("SELECT * FROM users WHERE github_id = ?").get(sessionUser) as UserDbRow;
+    
+    if (userInDb) {
+      const existingGroups = db.prepare("SELECT * FROM groups WHERE owner_id = ?").all(userInDb.id) as GroupDbRow[];
+      
+      if (!existingGroups.some(g => g.name === "未分類")) {
+        db.prepare("INSERT INTO groups (name, owner_id) VALUES ('未分類', ?)").run(userInDb.id);
+      }
+
+      const allGroups = db.prepare("SELECT * FROM groups WHERE owner_id = ?").all(userInDb.id) as GroupDbRow[];
+      myGroups = {};
+      allGroups.forEach((g) => {
+        const members = db.prepare("SELECT username FROM group_members WHERE group_id = ?").all(g.id) as MemberDbRow[];
+        myGroups[g.name] = members.map(m => m.username);
+      });
+    }
+  }
+
   async function createGroup(formData: FormData) {
     "use server";
-    const groupName = formData.get("groupName") as string;
-    if (!groupName) return;
-    const currentGroups = loadGroups();
-    if (!currentGroups[groupName.trim()]) {
-      currentGroups[groupName.trim()] = [];
-      saveGroups(currentGroups);
-    }
+    if (!sessionUser || !userInDb) return;
+    const name = (formData.get("groupName") as string)?.trim();
+    if (!name) return;
+    try {
+      db.prepare("INSERT INTO groups (name, owner_id) VALUES (?, ?)").run(name, userInDb.id);
+    } catch { /**/ }
     revalidatePath("/");
   }
 
   async function deleteGroup(formData: FormData) {
     "use server";
-    const groupToDelete = formData.get("groupName") as string;
-    if (!groupToDelete || groupToDelete === "未分類") return;
-    const currentGroups = loadGroups();
-    if (currentGroups[groupToDelete]) {
-      delete currentGroups[groupToDelete];
-      saveGroups(currentGroups);
-    }
+    if (!sessionUser || !userInDb) return;
+    const name = formData.get("groupName") as string;
+    if (!name || name === "未分類") return;
+    db.prepare("DELETE FROM groups WHERE name = ? AND owner_id = ?").run(name, userInDb.id);
     revalidatePath("/");
   }
 
   async function addUser(formData: FormData) {
     "use server";
-    const username = formData.get("username") as string;
-    const targetGroup = formData.get("targetGroup") as string || "未分類";
+    if (!sessionUser || !userInDb) return;
+    const username = (formData.get("username") as string)?.trim();
+    const targetGroupName = formData.get("targetGroup") as string || "未分類";
     if (!username) return;
-    const currentGroups = loadGroups();
-    if (!currentGroups[targetGroup]) currentGroups[targetGroup] = [];
-    if (!currentGroups[targetGroup].includes(username.trim())) {
-      currentGroups[targetGroup].push(username.trim());
-      saveGroups(currentGroups);
+
+    const group = db.prepare("SELECT id FROM groups WHERE name = ? AND owner_id = ?").get(targetGroupName, userInDb.id) as GroupDbRow;
+    if (group) {
+      try {
+        db.prepare("INSERT INTO group_members (group_id, username) VALUES (?, ?)").run(group.id, username);
+      } catch { /**/ }
     }
     revalidatePath("/");
   }
 
   async function deleteUser(formData: FormData) {
     "use server";
+    if (!sessionUser || !userInDb) return;
     const username = formData.get("username") as string;
-    const targetGroup = formData.get("targetGroup") as string || "未分類";
-    if (!username) return;
-    const currentGroups = loadGroups();
-    if (currentGroups[targetGroup]) {
-      currentGroups[targetGroup] = currentGroups[targetGroup].filter((n) => n !== username);
-      saveGroups(currentGroups);
+    const targetGroupName = formData.get("targetGroup") as string || "未分類";
+    
+    const group = db.prepare("SELECT id FROM groups WHERE name = ? AND owner_id = ?").get(targetGroupName, userInDb.id) as GroupDbRow;
+    if (group) {
+      db.prepare("DELETE FROM group_members WHERE group_id = ? AND username = ?").run(group.id, username);
     }
     revalidatePath("/");
   }
 
-  // ==========================================
-  // 📈 データフェッチ・集計処理
-  // ==========================================
-  const now = new Date();
-  const reqHeaders: HeadersInit = GITHUB_TOKEN ? { Authorization: `token ${GITHUB_TOKEN}` } : {};
+  const displayUsernames = searchUser ? [searchUser] : (sessionUser ? (myGroups[currentGroup] || []) : []);
 
   const memberStatsPromises = displayUsernames.map(async (username) => {
     try {
@@ -129,79 +142,89 @@ export default async function Home({ searchParams }: PageProps) {
       ]);
       if (!profileRes.ok) return null;
 
-      const profile: GitHubProfile = await profileRes.json();
-      const repos: GitHubRepo[] = reposRes.ok ? await reposRes.json() : [];
-      const events: GitHubEvent[] = eventsRes.ok ? await eventsRes.json() : [];
+      const reposData = (await reposRes.json()) as GitHubRepo[] || [];
+      const eventsData = (await eventsRes.json()) as GitHubEvent[] || [];
 
-      const userLanguages = repos.map(r => r.language).filter((l): l is string => l !== null);
       let userMonthlyCommits = 0;
-      events.forEach((event) => {
+      eventsData.forEach((event) => {
         if (event.type === "PushEvent") {
           userMonthlyCommits += event.payload?.commits?.length || event.payload?.distinct_size || event.payload?.size || 1;
         }
       });
 
-      return { profile, monthlyCommits: userMonthlyCommits, languages: userLanguages } as MemberStats;
-    } catch (e) { return null; }
+      return {
+        profile: await profileRes.json() as GitHubProfile,
+        languages: reposData.map(r => r.language).filter((l): l is string => l !== null),
+        monthlyCommits: userMonthlyCommits
+      } as MemberStats;
+    } catch { return null; }
   });
 
   const validMemberStats = (await Promise.all(memberStatsPromises)).filter((m): m is MemberStats => m !== null);
-  
-  // 統計集計
   const groupTotalCommits = validMemberStats.reduce((sum, m) => sum + m.monthlyCommits, 0);
+  
   const groupLanguageCounts: { [key: string]: number } = {};
   let groupTotalLanguages = 0;
   validMemberStats.forEach((m) => {
     m.languages.forEach((l) => { groupLanguageCounts[l] = (groupLanguageCounts[l] || 0) + 1; groupTotalLanguages++; });
   });
-
   const groupLanguageAnalysis = Object.entries(groupLanguageCounts)
     .map(([language, count]) => ({ language, percentage: Math.round((count / groupTotalLanguages) * 100) || 0 }))
     .sort((a, b) => b.percentage - a.percentage);
 
   return (
     <main className="p-8 max-w-5xl mx-auto space-y-8">
-      {/* 1. ヘッダー */}
-      <div className="text-center sm:text-left border-b pb-4 flex justify-between items-end">
+      <div className="border-b pb-4 flex justify-between items-center bg-white">
         <div>
-          <h1 className="text-3xl font-bold text-white">GitHub Analyzer</h1>
-          <p className="text-sm text-gray-500 mt-1">チーム開発マネジメントダッシュボード</p>
+          <h1 className="text-3xl font-black text-gray-900 tracking-tight">GitHub Analyzer</h1>
+          <p className="text-xs text-gray-400 mt-0.5">マルチモード・エンジニアダッシュボード</p>
         </div>
-        {currentGroup !== "未分類" && (
-          <Link href="/" className="text-sm text-blue-600 hover:underline font-semibold pb-1">
-            ← 個別登録（未分類）に戻る
-          </Link>
-        )}
+        
+        <div>
+          {sessionUser ? (
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-bold text-gray-700 hidden sm:inline">
+                👤 {sessionUser} でログイン中
+              </span>
+              <a
+                href="/api/auth/logout"
+                className="bg-red-50 hover:bg-red-100 text-red-600 font-bold px-4 py-2 rounded-xl text-xs transition-colors border border-red-200"
+              >
+                ログアウト
+              </a>
+            </div>
+          ) : (
+            <a
+              href="/api/auth/login"
+              className="bg-gray-900 hover:bg-gray-800 text-white font-bold px-5 py-2.5 rounded-xl text-xs transition-all shadow-md flex items-center gap-2"
+            >
+              <span>🐈</span> GitHubでログイン（管理モード）
+            </a>
+          )}
+        </div>
       </div>
 
-      {/* 2. 左右2カラムレイアウト */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* 左側：グループ管理サイドバー */}
-        <GroupSidebar 
-          groups={groups} 
-          currentGroup={currentGroup} 
-          createGroupAction={createGroup} 
-          deleteGroupAction={deleteGroup} 
+      {sessionUser ? (
+        <DashboardView
+          groups={myGroups}
+          currentGroup={currentGroup}
+          validMemberStats={validMemberStats}
+          groupTotalCommits={groupTotalCommits}
+          groupLanguageAnalysis={groupLanguageAnalysis}
+          createGroup={createGroup}
+          deleteGroup={deleteGroup}
+          addUser={addUser}
+          deleteUser={deleteUser}
+          searchParamsUser={searchUser}
         />
-        
-        {/* 右側：メインコンテンツ領域 */}
-        <div className="md:col-span-2 space-y-8">
-          {/* 統計情報（コンポーネント内で条件分岐） */}
-          <GroupStats 
-            currentGroup={currentGroup} 
-            validMemberStats={validMemberStats} 
-            groupTotalCommits={groupTotalCommits} 
-            groupLanguageAnalysis={groupLanguageAnalysis} 
-          />
-          {/* メンバー登録フォーム ＆ カード一覧 */}
-          <MemberList 
-            currentGroup={currentGroup} 
-            validMemberStats={validMemberStats} 
-            addUserAction={addUser} 
-            deleteUserAction={deleteUser} 
-          />
-        </div>
-      </div>
+      ) : (
+        <GuestView
+          searchParamsUser={searchUser}
+          guestMemberStats={validMemberStats}
+          groupTotalCommits={groupTotalCommits}
+          groupLanguageAnalysis={groupLanguageAnalysis}
+        />
+      )}
     </main>
   );
 }
