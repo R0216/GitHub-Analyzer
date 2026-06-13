@@ -1,4 +1,5 @@
 import React from "react";
+import { headers } from "next/headers";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { eq, and } from "drizzle-orm";
@@ -41,6 +42,11 @@ export default async function Home({ searchParams }: PageProps) {
 
   const GITHUB_TOKEN = sessionToken || process.env.GITHUB_TOKEN;
   const reqHeaders: HeadersInit = GITHUB_TOKEN ? { Authorization: `token ${GITHUB_TOKEN}` } : {};
+  const headersList = await headers();
+  const host = headersList.get("host") || "localhost:3000";
+  const protocol = host.startsWith("localhost") ? "http" : "https";
+  const dynamicRedirectUri = `${protocol}://${host}/api/auth/callback`;
+  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${process.env.GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(dynamicRedirectUri)}&scope=read:user`;
 
   const resolvedSearchParams = await searchParams;
   const currentGroup = resolvedSearchParams.group || "未分類";
@@ -215,7 +221,7 @@ export default async function Home({ searchParams }: PageProps) {
               <a href="/api/auth/logout" className="bg-red-50 hover:bg-red-100 text-red-600 font-bold px-4 py-2 rounded-xl text-xs transition-colors border border-red-200">ログアウト</a>
             </div>
           ) : (
-            <a href="/api/auth/login" className="bg-gray-900 hover:bg-gray-800 text-white font-bold px-5 py-2.5 rounded-xl text-xs transition-all shadow-md flex items-center gap-2"><span>🐈</span> GitHubでログイン（管理モード）</a>
+            <a href={githubAuthUrl} className="bg-gray-900 hover:bg-gray-800 text-white font-bold px-5 py-2.5 rounded-xl text-xs transition-all shadow-md flex items-center gap-2"><span>🐈</span> GitHubでログイン（管理モード）</a>
           )}
         </div>
       </div>
