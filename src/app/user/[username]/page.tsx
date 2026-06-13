@@ -95,7 +95,20 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
       <div className="flex items-center space-x-6 p-6 bg-white rounded-2xl shadow-sm border border-gray-200 transition-colors duration-300 dark:bg-gray-900 dark:border-gray-800">
         <Image src={profileData.avatar_url} alt={username} width={96} height={96} className="rounded-full border dark:border-gray-700" unoptimized />
         <div className="space-y-1">
-          <h1 className="text-2xl font-black text-gray-900 tracking-tight dark:text-white">{profileData.name || username}</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-black text-gray-900 tracking-tight dark:text-white">
+              {profileData.name || username}
+            </h1>
+            <a
+              href={`https://github.com/${username}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-2.5 py-1 rounded-lg text-xs transition-colors border border-gray-300 flex items-center gap-1 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:border-gray-700"
+            >
+              <span>🐈</span> GitHubで見る
+            </a>
+          </div>
+          
           <p className="text-sm text-gray-500 dark:text-gray-400">GitHub ID: <span className="font-mono font-bold text-gray-700 dark:text-gray-300">{username}</span></p>
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600 pt-2 dark:text-gray-400">
             <span>フォロワー: <strong className="text-blue-600 dark:text-blue-400">{profileData.followers}</strong> 人</span>
