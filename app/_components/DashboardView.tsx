@@ -71,7 +71,7 @@ export default function DashboardView({
           href={`/?group=${currentGroup}&tab=member`}
           className={`px-5 py-2.5 text-xs font-bold border-b-2 transition-all ${
             currentTab === "member"
-              ? "border-gray-950 text-gray-950"
+              ? "border-gray-950 text-white"
               : "border-transparent text-gray-400 hover:text-gray-600"
           }`}
         >
@@ -81,11 +81,17 @@ export default function DashboardView({
           href={`/?group=${currentGroup}&tab=project`}
           className={`px-5 py-2.5 text-xs font-bold border-b-2 transition-all ${
             currentTab === "project"
-              ? "border-gray-950 text-gray-950"
+              ? "border-gray-950 text-white"
               : "border-transparent text-gray-400 hover:text-gray-600"
           }`}
         >
           🚀 プロジェクト分析
+        </Link>
+        <Link
+          href="/"
+          className="ml-6 text-sm font-bold text-gray-400 hover:text-white transition-colors flex items-center gap-1"
+        >
+          <span>🏠</span> トップに戻る
         </Link>
       </div>
 
