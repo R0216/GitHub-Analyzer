@@ -41,9 +41,9 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
 
   if (!profileRes.ok || !reposRes.ok) {
     return (
-      <main className="p-8 text-center">
+      <main className="p-8 text-center min-h-screen dark:bg-gray-950">
         <p className="text-red-500 font-bold">詳細データの取得に失敗しました。</p>
-        <Link href="/" className="text-blue-600 underline text-sm mt-4 inline-block">トップへ戻る</Link>
+        <Link href="/" className="text-blue-600 dark:text-blue-400 underline text-sm mt-4 inline-block">トップへ戻る</Link>
       </main>
     );
   }
@@ -87,31 +87,31 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
   };
 
   return (
-    <main className="p-8 max-w-2xl mx-auto space-y-8">
-      <Link href="/" className="text-sm text-blue-600 hover:underline inline-block">
+    <main className="p-8 max-w-2xl mx-auto space-y-8 min-h-screen transition-colors duration-300 dark:bg-gray-950">
+      <Link href="/" className="text-sm text-blue-600 hover:underline inline-block dark:text-blue-400">
         ← トップページに戻る
       </Link>
 
-      <div className="flex items-center space-x-6 p-6 bg-gray-50 rounded-lg shadow-sm border">
-        <Image src={profileData.avatar_url} alt={username} width={96} height={96} className="rounded-full border" unoptimized />
+      <div className="flex items-center space-x-6 p-6 bg-white rounded-2xl shadow-sm border border-gray-200 transition-colors duration-300 dark:bg-gray-900 dark:border-gray-800">
+        <Image src={profileData.avatar_url} alt={username} width={96} height={96} className="rounded-full border dark:border-gray-700" unoptimized />
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-gray-900">{profileData.name || username}</h1>
-          <p className="text-sm text-gray-500">GitHub ID: <span className="font-mono font-bold text-gray-700">{username}</span></p>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600 pt-2">
-            <span>フォロワー: <strong className="text-blue-600">{profileData.followers}</strong> 人</span>
-            <span>リポジトリ: <strong className="text-green-600">{profileData.public_repos}</strong> 個</span>
-            <span>総スター数: <strong className="text-yellow-500">⭐ {totalStars}</strong></span>
+          <h1 className="text-2xl font-black text-gray-900 tracking-tight dark:text-white">{profileData.name || username}</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">GitHub ID: <span className="font-mono font-bold text-gray-700 dark:text-gray-300">{username}</span></p>
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600 pt-2 dark:text-gray-400">
+            <span>フォロワー: <strong className="text-blue-600 dark:text-blue-400">{profileData.followers}</strong> 人</span>
+            <span>リポジトリ: <strong className="text-green-600 dark:text-green-400">{profileData.public_repos}</strong> 個</span>
+            <span>総スター数: <strong className="text-amber-500">⭐ {totalStars}</strong></span>
           </div>
         </div>
       </div>
 
-      <div className="p-6 border rounded-lg bg-white shadow-sm space-y-4">
-        <h2 className="text-xl font-bold text-gray-800">🏆 使用言語ランキング(下１０件のリポジトリに使用されている)</h2>
+      <div className="p-6 border border-gray-200 rounded-2xl bg-white shadow-sm space-y-4 transition-colors duration-300 dark:bg-gray-900 dark:border-gray-800">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">🏆 使用言語ランキング(最大10件)</h2>
         {languageAnalysis.length === 0 ? (
-          <p className="text-sm text-gray-500">言語データがありません。</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">言語データがありません。</p>
         ) : (
           <div className="space-y-5">
-            <div className="w-full h-4 rounded-full overflow-hidden flex bg-gray-100">
+            <div className="w-full h-4 rounded-full overflow-hidden flex bg-gray-100 dark:bg-gray-950">
               {languageAnalysis.map((item) => {
                 const color = langColors[item.language] || "bg-indigo-400";
                 return <div key={item.language} style={{ width: `${item.percentage}%` }} className={`${color} h-full transition-all`} title={`${item.language}: ${item.percentage}%`} />;
@@ -120,15 +120,15 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
             <div className="space-y-2 max-w-md">
               {languageAnalysis.map((item, idx) => {
                 const color = langColors[item.language] || "bg-indigo-400";
-                const rankColor = idx === 0 ? "text-yellow-500 font-extrabold" : idx === 1 ? "text-gray-400 font-bold" : idx === 2 ? "text-amber-600 font-bold" : "text-gray-500";
+                const rankColor = idx === 0 ? "text-yellow-500 font-extrabold" : idx === 1 ? "text-gray-400 font-bold" : idx === 2 ? "text-amber-600 font-bold" : "text-gray-500 dark:text-gray-400";
                 return (
-                  <div key={item.language} className="flex items-center justify-between p-2 rounded-md hover:bg-gray-50 transition-colors">
+                  <div key={item.language} className="flex items-center justify-between p-2 rounded-xl bg-gray-100 border border-gray-200 transition-colors duration-300 hover:bg-gray-200 dark:bg-gray-950 dark:border-gray-800/60 dark:hover:bg-gray-900">
                     <div className="flex items-center space-x-3">
                       <span className={`w-8 text-center text-sm ${rankColor}`}>{idx + 1}位</span>
                       <span className={`w-3 h-3 rounded-full ${color} block`} />
-                      <span className="font-semibold text-gray-800 text-sm">{item.language}</span>
+                      <span className="font-semibold text-gray-900 text-sm dark:text-gray-200">{item.language}</span>
                     </div>
-                    <span className="font-mono font-bold text-gray-900 text-sm">{item.percentage}%</span>
+                    <span className="font-mono font-bold text-gray-900 text-sm dark:text-white">{item.percentage}%</span>
                   </div>
                 );
               })}
@@ -138,22 +138,22 @@ export default async function UserDetailPage({ params, searchParams }: PageProps
       </div>
 
       <div className="space-y-4">
-        <div className="flex items-center justify-between border-b pb-2">
-          <h2 className="text-xl font-bold text-gray-800">公開リポジトリ (最大10件)</h2>
+        <div className="flex items-center justify-between border-b pb-2 dark:border-gray-800">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">公開リポジトリ (最大10件)</h2>
           <SortSelector username={username} currentSort={currentSort} />
         </div>
         
         {displayRepos.length === 0 ? (
-          <p className="text-gray-500 text-sm">公開されているリポジトリはありません。</p>
+          <p className="text-gray-500 text-sm dark:text-gray-400">公開されているリポジトリはありません。</p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {displayRepos.map((repo) => (
-              <a key={repo.id} href={repo.html_url} target="_blank" rel="noopener noreferrer" className="block p-4 border rounded-lg hover:border-blue-500 hover:shadow-md transition-all bg-white group" >
-                <h3 className="font-semibold text-blue-600 group-hover:underline break-words">{repo.name}</h3>
-                <p className="text-xs text-gray-500 mt-1 line-clamp-2 h-8">{repo.description || "説明はありません。"}</p>
-                <div className="flex justify-between items-center mt-3 text-xs text-gray-600">
-                  <span className="bg-gray-100 px-2 py-0.5 rounded font-mono">{repo.language || "Unknown"}</span>
-                  <span>⭐ {repo.stargazers_count}</span>
+              <a key={repo.id} href={repo.html_url} target="_blank" rel="noopener noreferrer" className="block p-4 border border-gray-200 rounded-2xl hover:border-blue-500 hover:shadow-md transition-all bg-gray-100 group dark:bg-gray-900 dark:border-gray-800 dark:hover:border-blue-500" >
+                <h3 className="font-bold text-blue-600 group-hover:underline break-words dark:text-blue-400">{repo.name}</h3>
+                <p className="text-xs text-gray-700 mt-1 line-clamp-2 h-8 leading-relaxed dark:text-gray-400">{repo.description || "説明はありません。"}</p>
+                <div className="flex justify-between items-center mt-3 text-xs text-gray-600 dark:text-gray-400">
+                  <span className="bg-white px-2 py-0.5 rounded border border-gray-200 font-mono text-gray-700 dark:bg-gray-950 dark:border-gray-800 dark:text-gray-300">{repo.language || "Unknown"}</span>
+                  <span className="font-mono font-semibold text-gray-900 dark:text-gray-300">⭐ {repo.stargazers_count}</span>
                 </div>
               </a>
             ))}
