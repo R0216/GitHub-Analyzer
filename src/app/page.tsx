@@ -210,20 +210,28 @@ export default async function Home({ searchParams }: PageProps) {
   }
 
   return (
-    <main className="p-8 max-w-5xl mx-auto space-y-8">
-      <div className="border-b pb-4 flex justify-between items-center bg-white">
+    <main className="p-8 max-w-5xl mx-auto space-y-8 min-h-screen transition-colors duration-300 dark:bg-gray-950">
+      <div className="border-b pb-4 flex justify-between items-center bg-white transition-colors duration-300 dark:bg-gray-950 dark:border-gray-800">
         <div>
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight">GitHub Analyzer</h1>
+          <h1 className="text-3xl font-black text-gray-900 tracking-tight dark:text-white">
+            GitHub Analyzer
+          </h1>
           <p className="text-xs text-gray-400 mt-0.5">マルチモード・エンジニアダッシュボード</p>
         </div>
         <div>
           {sessionUser ? (
             <div className="flex items-center gap-3">
-              <span className="text-sm font-bold text-gray-700 hidden sm:inline">👤 {sessionUser} でログイン中</span>
-              <a href="/api/auth/logout" className="bg-red-50 hover:bg-red-100 text-red-600 font-bold px-4 py-2 rounded-xl text-xs transition-colors border border-red-200">ログアウト</a>
+              <span className="text-sm font-bold text-gray-700 hidden sm:inline dark:text-gray-300">
+                👤 {sessionUser} でログイン中
+              </span>
+              <a href="/api/auth/logout" className="bg-red-50 hover:bg-red-100 text-red-600 font-bold px-4 py-2 rounded-xl text-xs transition-colors border border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900/50">
+                ログアウト
+              </a>
             </div>
           ) : (
-            <a href={githubAuthUrl} className="bg-gray-900 hover:bg-gray-800 text-white font-bold px-5 py-2.5 rounded-xl text-xs transition-all shadow-md flex items-center gap-2"><span>🐈</span> GitHubでログイン（管理モード）</a>
+            <a href={githubAuthUrl} className="bg-gray-900 hover:bg-gray-800 text-white font-bold px-5 py-2.5 rounded-xl text-xs transition-all shadow-md flex items-center gap-2 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100">
+              <span>🐈</span> GitHubでログイン（管理モード）
+            </a>
           )}
         </div>
       </div>

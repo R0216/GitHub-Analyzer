@@ -18,7 +18,7 @@ export default function GroupSidebar({
   return (
     <div className="space-y-6 md:border-r md:pr-6 border-gray-200">
       <div className="space-y-2">
-        <h2 className="text-xl font-bold text-white">📂 グループ管理</h2>
+        <h2 className="text-xl font-bold text-gray-600">📂 グループ管理</h2>
         <p className="text-xs text-gray-400">それぞれのグループを分析します</p>
       </div>
       <form action={createGroupAction} className="flex flex-col gap-2 p-4 bg-gray-50 rounded-lg border shadow-sm">

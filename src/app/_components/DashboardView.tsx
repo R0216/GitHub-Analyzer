@@ -66,13 +66,13 @@ export default function DashboardView({
 }: DashboardViewProps) {
   return (
     <div className="space-y-6">
-      <div className="flex border-b border-gray-200">
+      <div className="flex border-b border-gray-200 dark: border-gray-800">
         <Link
           href={`/?group=${currentGroup}&tab=member`}
           className={`px-5 py-2.5 text-xs font-bold border-b-2 transition-all ${
             currentTab === "member"
-              ? "border-gray-950 text-white"
-              : "border-transparent text-gray-400 hover:text-gray-600"
+              ? "border-gray-950 text-gray-500 dark:border-white dark:text-white"
+              : "border-transparent text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
           }`}
         >
           👥 メンバー分析
@@ -81,15 +81,15 @@ export default function DashboardView({
           href={`/?group=${currentGroup}&tab=project`}
           className={`px-5 py-2.5 text-xs font-bold border-b-2 transition-all ${
             currentTab === "project"
-              ? "border-gray-950 text-white"
-              : "border-transparent text-gray-400 hover:text-gray-600"
+              ? "border-gray-950 text-gray-500 dark:border-white dark:text-white"
+              : "border-transparent text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
           }`}
         >
           🚀 プロジェクト分析
         </Link>
         <Link
           href="/"
-          className="ml-6 text-sm font-bold text-gray-400 hover:text-white transition-colors flex items-center gap-1"
+          className="ml-6 text-sm font-bold text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1 dark:text-gray-500 dark:hover:text-gray-300"
         >
           <span>🏠</span> トップに戻る
         </Link>
@@ -108,7 +108,7 @@ export default function DashboardView({
 
           <div className="md:col-span-3 space-y-8">
             {searchParamsUser && (
-              <div className="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-xl text-xs font-medium">
+              <div className="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-xl text-xs font-medium dark:bg-blue-950/20 dark:border-blue-900/50 dark:text-blue-300">
                 💡 現在、検索窓の指定による個別ユーザー「{searchParamsUser}」のクイック解析結果を表示しています。グループ表示に戻るには検索窓を空にしてください。
               </div>
             )}
